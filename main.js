@@ -223,6 +223,7 @@ async function main() {
     let rotationY = 0;
     let rotationX = 0;
 
+    // Eventos de mouse
     canvas.addEventListener("mousedown", (e) => {
         dragging = true;
         lastX = e.clientX;
@@ -244,6 +245,32 @@ async function main() {
             lastY = e.clientY;
         }
     });
+    
+    // Eventos de toque (touch) para dispositivos móveis
+    canvas.addEventListener("touchstart", (e) => {
+        if (e.touches.length === 1) {
+            dragging = true;
+            lastX = e.touches[0].clientX;
+            lastY = e.touches[0].clientY;
+        }
+    });
+    canvas.addEventListener("touchend", () => {
+        dragging = false;
+    });
+    canvas.addEventListener("touchcancel", () => {
+        dragging = false;
+    });
+    canvas.addEventListener("touchmove", (e) => {
+        if (dragging && e.touches.length === 1) {
+            const dx = e.touches[0].clientX - lastX;
+            const dy = e.touches[0].clientY - lastY;
+            rotationY += dx * 0.01;
+            rotationX += dy * 0.01;
+            lastX = e.touches[0].clientX;
+            lastY = e.touches[0].clientY;
+            e.preventDefault();
+        }
+    }, { passive: false });
 
     const fsWireframeSource = document.getElementById("fs-wireframe").textContent;
     const programWireframe = createProgram(gl, vsSource, fsWireframeSource);
