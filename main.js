@@ -53,6 +53,7 @@ async function loadTeapotOBJ(url) {
                     const parts = verts[idx].split("/");
                     const v = parseInt(parts[0], 10);
                     const n = parts.length > 2 ? parseInt(parts[2], 10) : null;
+                    console.log(idx,parts,n)
                     if (!isNaN(v) && v > 0 && tempVertices[v - 1]) {
                         positions.push(...tempVertices[v - 1]);
                     }
@@ -65,60 +66,11 @@ async function loadTeapotOBJ(url) {
                     indices.push(indices.length);
                 });
             }
+            console.log("indice")
         }
     }
 
     return { positions, normals, indices };
-}
-
-// Função para carregar modelo customizado .norm (ponto, normal, ponto, normal...)
-async function loadTeapotNormFormat(url) {
-    const text = await fetch(url).then(res => res.text());
-    const lines = text.trim().split('\n');
-    const nFaces = parseInt(lines[0]);
-    const vertices = [];
-    const normals = [];
-    let i = 1;
-    for (let f = 0; f < nFaces; f++) {
-        for (let v = 0; v < 3; v++) {
-            // Ponto
-            const point = lines[i++].trim().split(/\s+/).map(Number);
-            vertices.push(...point);
-            // Normal correspondente
-            const normal = lines[i++].trim().split(/\s+/).map(Number);
-            normals.push(...normal);
-        }
-    }
-    // Cada face é um triângulo, então os índices são [0,1,2, 3,4,5, ...]
-    const indices = [];
-    for (let f = 0; f < nFaces; f++) {
-        indices.push(f * 3, f * 3 + 1, f * 3 + 2);
-    }
-    return { positions: vertices, normals, indices };
-}
-
-// Função para carregar modelo customizado .norm/.tris
-async function loadTeapotTrisAndNorms(url) {
-    const text = await fetch(url).then(res => res.text());
-    const lines = text.trim().split('\n');
-    const nFaces = parseInt(lines[0]);
-    const vertices = [];
-    const normals = [];
-    let i = 1;
-    for (let f = 0; f < nFaces; f++) {
-        // 3 pontos
-        for (let v = 0; v < 3; v++, i++) {
-            const parts = lines[i].trim().split(/\s+/).map(Number);
-            vertices.push(...parts);
-        }
-        // 3 normais
-        for (let v = 0; v < 3; v++, i++) {
-            const parts = lines[i].trim().split(/\s+/).map(Number);
-            normals.push(...parts);
-        }
-    }
-    const indices = Array.from({ length: vertices.length / 3 }, (_, k) => k);
-    return { positions: vertices, normals, indices };
 }
 
 function setBuffer(gl, data, type, usage, attribLoc, size) {
@@ -139,28 +91,20 @@ function normalizeMatrix(mvMatrix) {
 }
 
 async function main() {
-    // await compareModels('./src/teapot.obj', './src/teapot_surface0.norm');
-
 
     const vsSource = document.getElementById("vs").textContent;
     const fsSource = document.getElementById("fs").textContent;
     const program = createProgram(gl, vsSource, fsSource);
     gl.useProgram(program);
 
-    // Escolha o modelo a ser carregado
-    // Para OBJ: './src/teapot.obj'
-    // Para formato customizado: './src/teapot_surface0.norm'
-    const modelPath = './src/teapot.obj'; // Altere para .obj se quiser testar o outro formato
+    const modelPath = './src/teapot.obj'; 
     let modelData;
     if (modelPath.endsWith('.obj')) {
-        modelData = await loadTeapotOBJ(modelPath);
-    } else if (modelPath.endsWith('.norm')) {
-        modelData = await loadTeapotNormFormat(modelPath);
-    } else if (modelPath.endsWith('.tris')) {
-        modelData = await loadTeapotTrisAndNorms(modelPath);
+        modelData = await loadTeapotOBJ(modelPath); 
     } else {
         throw new Error('Formato de modelo não suportado');
     }
+
     const { positions, normals, indices } = modelData;
 
     const aPosition = gl.getAttribLocation(program, "aPosition");
@@ -245,7 +189,7 @@ async function main() {
             lastY = e.clientY;
         }
     });
-    
+
     // Eventos de toque (touch) para dispositivos móveis
     canvas.addEventListener("touchstart", (e) => {
         if (e.touches.length === 1) {
@@ -340,20 +284,5 @@ async function main() {
     render();
 }
 
-async function compareModels(objPath, normPath) {
-    const objData = await loadTeapotOBJ(objPath);
-    const normData = await loadTeapotNormFormat(normPath);
-    console.log('--- COMPARAÇÃO OBJ x NORM ---');
-    console.log('OBJ vertices:', objData.positions.length, objData.positions.slice(0, 12));
-    console.log('NORM vertices:', normData.positions.length, normData.positions.slice(0, 12));
-    console.log('OBJ normals:', objData.normals.length, objData.normals.slice(0, 12));
-    console.log('NORM normals:', normData.normals.length, normData.normals.slice(0, 12));
-    console.log('OBJ indices:', objData.indices.length, objData.indices.slice(0, 12));
-    console.log('NORM indices:', normData.indices.length, normData.indices.slice(0, 12));
-    // Se quiser comparar todos os valores, pode usar JSON.stringify ou um diff mais elaborado
-}
-
-// Chame compareModels no início do main() para testar:
-// await compareModels('./src/teapot.obj', './src/teapot_surface0.norm');
 
 main();
