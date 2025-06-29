@@ -60,7 +60,6 @@ async function loadTeapotOBJ(url) {
                     if (n !== null && !isNaN(n) && n > 0 && tempNormals[n - 1]) {
                         normals.push(...tempNormals[n - 1]);
                     } else {
-                        // fallback: push                                     mat4.translate(modelViewMatrix, modelViewMatrix, [0, -1, -6]);a default normal if missing
                         normals.push(0, 0, 1);
                     }
                     indices.push(indices.length);
